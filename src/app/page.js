@@ -1,74 +1,80 @@
-"use client"
-import { add } from "@/redux/Cartslice"
-import { increment,decrement } from "@/reduxTwo/Counterslice"
-import { addEmailId,addPassword } from "@/reduxTwo/auth"
-import { addTodo,deleteTodo } from "@/reduxTwo/Todoslice"
-import { useDispatch,useSelector } from "react-redux"
-import data from "src/app/todo.json"
-import { useEffect } from "react"
-const Home = () =>{
-  let dispatch = useDispatch()
-  let selctor = useSelector((state)=>state.mycounter)
-  let authSelector = useSelector((state)=> state.myauth)
-  let todoSelector = useSelector((state)=> state.mytodo)
-  const getTodo = () => {
-      dispatch(addTodo(data))
-      console.log(todoSelector);
-  }
-  const handleClick = () => {
-    dispatch(increment())
-  }
-  const handleClickTwo = () => {
-    dispatch(decrement())
-  }
-  // const alertt = () => {
-  //   let obj ={email:"test123@test.com" ,password:56789}
-  //   let objTwo ={email:"test456@test.com" ,password:16789}
-  //   dispatch(addEmailId(obj))
-  //   dispatch(addEmailId(objTwo))
+"use client";
+import { useEffect, useState } from "react";
+import Products from "./component/product";
+import { useDispatch, useSelector } from "react-redux";
+import { addProduct } from "@/my-redux/cartslice";
+import Mycart from "./cart/cart";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-  // }
-  // function handleCheck(event) {
-  //   let isChecked = event.target.checked
-  //   if(isChecked){
-  //         todoSelector.map((items)=>{
-  //           let newTodo = JSON.parse(JSON.stringify(items))
-  //           newTodo.completed = true
-  //           dispatch(deleteTodo(newTodo.completed))
-  //         })
-  //   }
-  // }
-  useEffect(()=>{
-    localStorage.setItem("auth",JSON.stringify(authSelector))
-  },[authSelector])
-
-  function handleSubmit(event) {
-    event.preventDefault();
-    let email = event.target[0].value
-    let pass = event.target[1].value
-    let obj = {email:email,pass:pass}
-    dispatch(addEmailId(obj))
-    event.target.reset()
+const Home = () => {
+  let selector = useSelector((state) => state.cart);
+  let dispatch = useDispatch();
+  const [Data, setData] = useState([]);
+  const [qty, setQty] = useState(1);
+  const [loader, setLoader] = useState(false);
+  async function getProducts() {
+    try {
+      setLoader(true);
+      const res = await fetch("https://fakestoreapi.com/products");
+      const data = await res.json();
+      setLoader(false);
+      setData(data);
+    } catch (error) {
+      toast.error("failed to fetch", {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
+    }
   }
+  const handleClick = (data) => {
+    dispatch(addProduct(data));
+
+    console.log(selector);
+  };
+
+  useEffect(() => {
+    getProducts();
+    console.log("one");
+  }, []);
 
   return (
-    <>
-      <h1>home page </h1>
-      <button>clickme</button><br />
-      {authSelector.map((obj,i)=><div key={i}>{obj.email}</div>)} 
-      <button onClick={getTodo}>clk me</button>
-      {todoSelector.map((obj) => {
-        return <div key={obj.id}>{obj.title}<input type="checkbox" onClick={(event)=>{handleCheck(event)}}></input></div>
-      })}
-      <form onSubmit={(event)=>{handleSubmit(event)}}>
-        <input type="text" placeholder="email" required></input>
-        <input type="password" placeholder="password" required></input>
-        <button>sub</button>
-      </form>
-      {authSelector.map((items,i)=>{
-        return <div key={i}>Email:{items.email}    <br />    pass:{items.pass}</div>
-      })}
-    </>
-  )
-}
-export default Home
+    <section className="flex">
+      <div>
+        <div>
+          {loader ? (
+            <span className="text-8xl font-bold m-3">loading....</span>
+          ) : (
+            Data.map((Product, i) => {
+              return (
+                <div key={i}>
+                  <Products data={Product} />
+                  <button
+                    className="bg-black p-2 text-white mr-3"
+                    onClick={() => {
+                      handleClick({
+                        products: Product,
+                        quantity: qty,
+                        myPrice: Product.price,
+                      });
+                    }}>
+                    add to cart
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+      <div>{selector.items.length > 0 ? <Mycart /> : ""}</div>
+    </section>
+  );
+};
+
+export default Home;
